@@ -7,6 +7,7 @@ from sim_access.sim import SIMModuleBase
 
 logger = logging.getLogger(__name__)
 
+APN = 'pwg'
 
 class MySIM(SIMModuleBase):
     def on_sms(self, number, content):
@@ -34,9 +35,11 @@ if __name__ == '__main__':
 
     #based on https://m2msupport.net/m2msupport/atciicr-bring-up-gprs-or-circuit-switch-connection/
     a.network_attach()
-    a.network_setapn('pwg') # usmobile apn
+    a.network_setapn(APN) # usmobile apn
     a.network_bringup()
     addr = a.network_ipaddr()
     print(addr)
 
+    rtn = a.gps_location_date_time(APN)
+    print(rtn) #print gps result
     a.mainloop()
