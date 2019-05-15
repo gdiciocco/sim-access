@@ -38,8 +38,9 @@ if __name__ == '__main__':
     a.network_setapn(APN) # usmobile apn
     a.network_bringup()
     addr = a.network_ipaddr()
-    print(addr)
+    print('My IP: {0}'.format(addr))
 
-    rtn = a.gps_location_date_time(APN)
-    print(rtn) #print gps result
+    ((mylong, mylat), mydate, mytime) = sim.gps_location_date_time(APN)
+    print('Longitude: {0}\nLatitude: {1}\nDate: {2}\nTime: {3}\n'.format(mylong, mylat, mydate, mytime))
+    
     a.mainloop()
