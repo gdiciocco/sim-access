@@ -96,13 +96,9 @@ class ATCommands(object):
         return atread('COPS', True) + '\r\n'
         
     @classmethod
-    def ask_rssi(cls):
-        return atset('CSQ', True) + '\r\n'
+    def query_rssi(cls):
+        return atcmd('CSQ', True) + '\r\n'
         
-    @classmethod
-    def read_rssi(cls):
-        return atread('CSQ', True) + '\r\n'
-
     @classmethod
     def module_sapbr(cls, cmd):
         return atset('SAPBR', True) + '{0}\r\n'.format(cmd)
@@ -313,11 +309,35 @@ class SIMModuleBase(object):
         self.__initialize()
 
     def get_rssi(self):
-        tmp = ATCommands.ask_rssi()
+        """
+            <rssi>
+                0 -115 dBm or less
+                1 -111 dBm
+                2...30 -110... -54 dBm
+                31 -52 dBm or greater
+                99 not known or not detectable
+            <ber> (in percent):
+                RXQUAL_0 BER < 0.2% Assumed value = 0.14%
+                RXQUAL_1 0.2% < BER < 0.4% Assumed value = 0.28%
+                RXQUAL_2 0.4% < BER < 0.8% Assumed value = 0.57%
+                RXQUAL_3 0.8% < BER < 1.6% Assumed value = 1.13%
+                RXQUAL_4 1.6% < BER < 3.2% Assumed value = 2.26%
+                RXQUAL_5 3.2% < BER < 6.4% Assumed value = 4.53%
+                RXQUAL_6 6.4% < BER < 12.8% Assumed value = 9.05%
+                RXQUAL_7 12.8% < BER Assumed value = 18.10%
+                99 Not known or not detectable 
+        """
+        tmp = ATCommands.query_rssi()
         self.__adapter.write(tmp.encode())
-        self.__wait_ok()
-        return (ATCommands.read_rssi())
+        tmp = self.__wait_ok()
+        for i in tmp:
+            if (i.find('+CSQ:') == 0):
+                level = int((i.split(" ")[1]).split(",")[0])
+                ber = int((i.split(" ")[1]).split(",")[1])
+                return level, ber
 
+        return false
+        
     def gps_location_date_time(self, apn):
         ''' get gps location date and time
         '''
