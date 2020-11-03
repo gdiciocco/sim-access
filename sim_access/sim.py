@@ -81,14 +81,27 @@ class ATCommands(object):
     @classmethod
     def module_checkready(cls):
         return atread('CPIN', True) + '\r\n'
-
+        
     @classmethod
     def module_poweroff(cls):
-        return atset('CPOF', True) + '1\r\n'
+        return atset('CPOWD', True) + '1\r\n'
+
+    @classmethod
+    def module_fullfunc(cls):
+        return atset('CFUN', True) + '1\r\n'
+
 
     @classmethod
     def module_regstatus(cls):
         return atread('COPS', True) + '\r\n'
+        
+    @classmethod
+    def ask_rssi(cls):
+        return atset('CSQ', True) + '\r\n'
+        
+    @classmethod
+    def read_rssi(cls):
+        return atread('CSQ', True) + '\r\n'
 
     @classmethod
     def module_sapbr(cls, cmd):
@@ -133,7 +146,7 @@ class ATCommands(object):
 
     @classmethod
     def sms_delall(cls):
-        return atset('CMGD', True) + '1,3\r\n'
+        return atset('CMGDA', True) + 'DEL ALL\r\n'
 
 
 '''TODO: we need to follow https://wiki.keyestudio.com/Ks0287_keyestudio_SIM5320E_3G_Module_(Black)
@@ -150,17 +163,20 @@ class SIMModuleBase(object):
             '+CMTI': self.__sms_process,
             'RING': self.__call_process,
             'MISSED_CALL': self.__call_process_missed,
+            'NORMAL POWER DOWN': self.resume_shutdown,
+            'POWER DOWN': self.resume_shutdown
         }
 
     def __initialize(self):
         cmds = [
             'AT', #test if basic function is working
             'AT+CMGF=1', #we want to run in text mode
-            'AT+CGATT=1', #enable GPS
+            'AT+CGATT=0', #enable GPS
             'AT+CSMP=17,167,0,8',
             'AT+CLIP=1', #we want caller info when receiving call
             'ATE0', #no echo is needed
             'AT+CSCS="UCS2"', #we want to be able to send unicode
+            'AT+CSCLK=0', #disable automatic sleep
         ]
         count = 0
         while count < 10 and not self.module_checkready():
@@ -179,7 +195,7 @@ class SIMModuleBase(object):
         done = False
         counter = 0
         msgs = []
-        while done == False and counter < 3:
+        while done == False and counter < 6:
             line = self.__adapter.readline()
             line = line.decode()
             logger.debug(line)
@@ -194,6 +210,32 @@ class SIMModuleBase(object):
         if not done:
             raise Exception('No OK reply')
         return msgs
+        
+    def __wait_poweroff(self):
+        done = False
+        counter = 0
+        msgs = []
+        while done == False and counter < 6:
+            line = self.__adapter.readline()
+            line = line.decode()
+            logger.debug(line)
+            msgs.append(line)
+            if line == 'NORMAL POWER DOWN\r\n' or line == 'POWER DOWN\r\n' :
+                done = True
+            elif line == 'ERROR\r\n':
+                done = False
+                raise Exception('Failed')
+            if line is None or line == '':
+                counter += 1
+        if not done:
+            raise Exception('No OK reply')
+        return msgs
+
+    @abstractmethod
+    def resume_shutdown(self):
+        ''' This is called when we received an sms message
+        '''
+        raise NotImplementedError()
 
     @abstractmethod
     def on_sms(self, number, content):
@@ -230,6 +272,16 @@ class SIMModuleBase(object):
         self.__adapter.write(tmp.encode())
         self.__wait_ok()
 
+    def sms_delall(self):
+        ''' delete all stored sms
+        '''
+        tmp = ATCommands.sms_delall()
+        self.__adapter.write(tmp.encode())
+        try:
+            self.__wait_ok()
+        except Exception as e:
+            logger.error("error while emptying sms storage, probably already empty")
+
     def call_hangup(self):
         ''' hangup current phone call
         '''
@@ -253,7 +305,18 @@ class SIMModuleBase(object):
         '''
         tmp = ATCommands.module_poweroff()
         self.__adapter.write(tmp.encode())
+        self.__wait_poweroff()
+
+    def module_poweron(self):
+        ''' restart sim module
+        '''
+        self.__initialize()
+
+    def get_rssi(self):
+        tmp = ATCommands.ask_rssi()
+        self.__adapter.write(tmp.encode())
         self.__wait_ok()
+        return (ATCommands.read_rssi())
 
     def gps_location_date_time(self, apn):
         ''' get gps location date and time
