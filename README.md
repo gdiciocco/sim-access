@@ -1,15 +1,19 @@
 # sim-access
-A Python module for managing SIM modules
+A Python module for managing SIM modules - this is a fork of the original from Wilson Wang which is one of the best libraries I found for this application.
 
 
 ## Setup
 The setup is:
-- A serial sim module SIM7500A (SIM800L is supported too).
-- A USB to serial module connecting my computer with SIM7500A. 
+- SIM868 from waveshare connected via GPIO to a raspberry pi zero w
 
-The reason I am using a USB to Serial module is because I always want to make things easier to integrate with different setups. I hate connecting different GPIO wires with the SIM module and this is not sexy at all. With a USB to Serial module. It can be easier to plug and unplug to your systems.
+## Changes
+get_rssi() - returns a tuple containing level and ber according to the comments - TODO tune to avoid posterior reformatting
+sms_delall() - used to delete sms from all the storages
 
-<img src="https://cdn10.bigcommerce.com/s-rs1s2e/products/1375/images/2743/SIM7500A-5__33469.1542867154.1280.1280.png?c=2" width=200> <img src="https://images-na.ssl-images-amazon.com/images/I/71Uo%2BlNcjTL._SX425_.jpg" width=200>
+GPS disabled during initialization sequence, you can enable it back.
+Added AT+CSCLK=0 in initialization sequence to disable sleep.
+Increased counter of wait_ok to 6 as it was giving false negatives sometimes, needs to be understood and refined.
+I've connected PWRKEY to a custom gpio and i'm handling it from the main app, however it could be already available somewhere, i'll integrate it in the library eventually. As the module sometimes needs to be power cycled and/or reset and there's a reset pin too, according to the sim868 docs. Got to take a deeper look in the future.
 
 
 ## Coding
