@@ -9,11 +9,14 @@ The setup is:
 ## Changes
 get_rssi() - returns a tuple containing level and ber according to the comments - TODO tune to avoid posterior reformatting
 
-sms_delall() - used to delete sms from all the storages
+sms_delall() - used to empty all the message storages 
 
 GPS disabled during initialization sequence, you can enable it back.
+
 Added AT+CSCLK=0 in initialization sequence to disable sleep.
+
 Increased counter of wait_ok to 6 as it was giving false negatives sometimes, needs to be understood and refined.
+
 I've connected PWRKEY to a custom gpio and i'm handling it from the main app, however it could be already available somewhere, i'll integrate it in the library eventually. As the module sometimes needs to be power cycled and/or reset and there's a reset pin too, according to the sim868 docs. Got to take a deeper look in the future.
 
 
