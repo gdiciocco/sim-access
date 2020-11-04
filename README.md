@@ -8,6 +8,7 @@ The setup is:
 
 ## Changes
 get_rssi() - returns a tuple containing level and ber according to the comments - TODO tune to avoid posterior reformatting
+
 sms_delall() - used to delete sms from all the storages
 
 GPS disabled during initialization sequence, you can enable it back.
