@@ -308,7 +308,7 @@ class SIMModuleBase(object):
         '''
         self.__initialize()
 
-    def get_rssi(self):
+    def get_raw_rssi(self):
         """
             <rssi>
                 0 -115 dBm or less
@@ -336,8 +336,50 @@ class SIMModuleBase(object):
                 ber = int((i.split(" ")[1]).split(",")[1])
                 return level, ber
 
-        return false
-        
+        return False
+
+    def get_rssi(self):
+        """
+            returns
+                signal level ranges in dBm format or NA if not available
+                signal quality as high medium low based on BER level
+            <rssi>
+                0 -115 dBm or less
+                1 -111 dBm
+                2...30 -110... -54 dBm
+                31 -52 dBm or greater
+                99 not known or not detectable
+            <ber> (in percent):
+                RXQUAL_0 BER < 0.2% Assumed value = 0.14%
+                RXQUAL_1 0.2% < BER < 0.4% Assumed value = 0.28%
+                RXQUAL_2 0.4% < BER < 0.8% Assumed value = 0.57%
+                RXQUAL_3 0.8% < BER < 1.6% Assumed value = 1.13%
+                RXQUAL_4 1.6% < BER < 3.2% Assumed value = 2.26%
+                RXQUAL_5 3.2% < BER < 6.4% Assumed value = 4.53%
+                RXQUAL_6 6.4% < BER < 12.8% Assumed value = 9.05%
+                RXQUAL_7 12.8% < BER Assumed value = 18.10%
+                99 Not known or not detectable
+        """
+        level, ber = self.get_raw_rssi()
+        if level == 0 or level == 1:
+            level_report = "<= -111dBm"
+        elif 1 < level <= 30:
+            level = -110 + ((level - 2) * 2)
+            level_report = level + "dBm"
+        elif 31 <= level < 99:
+            level_report = ">= 52dBm"
+        elif level == 99:
+            level_report = "NA"
+
+        if 0 <= ber <= 3:
+            quality_report = "high"
+        if 3 < ber <= 5:
+            quality_report = "medium"
+        if 5 < ber <= 7:
+            quality_report = "low"
+
+        return level_report, quality_report
+
     def gps_location_date_time(self, apn):
         ''' get gps location date and time
         '''
