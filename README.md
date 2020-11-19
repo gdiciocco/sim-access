@@ -7,7 +7,9 @@ The setup is:
 - SIM868 from waveshare connected via GPIO to a raspberry pi zero w
 
 ## Changes
-get_rssi() - returns a tuple containing level and ber according to the comments - TODO tune to avoid posterior reformatting
+get__raw_rssi() - returns a tuple containing raw level and ber according to gsm module  
+
+get_rssi() - returns a tuple returning signal level in str "-nn dBm" and BER converted to quality str "high" "medium" or "low"
 
 sms_delall() - used to empty all the message storages 
 
